@@ -88,6 +88,29 @@ float interpNoise2D(float x, float y) {
     return mix(i1, i2, fractY);
 }
 
+float fbm(vec2 pos) {
+  float total = 0.f;
+  float persistence = 0.5f;
+  int octaves = 8;
+  float roughness = 1.0;
+
+  vec2 shift = vec2(100.0);
+
+  mat2 rot = mat2(cos(0.5), sin(0.5),
+                      -sin(0.5), cos(0.50));
+
+  for (int i = 0; i < octaves; i++) {
+    float freq = pow(2.0, float(i));
+    float amp = pow(persistence, float(i));
+
+    pos = rot * pos * 1.0 + shift;
+
+    total += abs(interpNoise2D( pos.x / 100.0  * freq * sin(u_Time * 0.1), pos.y / 200.0 * freq)) * amp * roughness;
+    roughness *= interpNoise2D(pos.x / 5.0  * freq, pos.y / 5.0 * freq);
+  }
+  return  total;
+}
+
 float fbm(float x, float y) {
   float total = 0.f;
   float persistence = 0.5f;
@@ -574,6 +597,7 @@ vec3 getShading(vec3 pos , vec3 lightp, vec3 color, vec3 rayDir, bool shadow)
 
     vec3 amb = vec3(0.08);
     vec3 diffuse = vec3(0.5 * pow(0.5+0.5*dot(norm, -lightdir), 3.0));
+
     //vec3 phong = vec3(0.2 * pow(max(dot(-rayDir, reflect(lightdir, norm)), 0.0), 20.0));
 
     return (amb + diffuse) * color * pow(vec3(sha),vec3(1.0,1.0,1.5));
@@ -599,11 +623,16 @@ vec3 getShadingGreen(vec3 pos , vec3 lightp, vec3 color, vec3 rayDir, bool shado
 
 
 vec3 backgroundColor(vec3 dir ) {
+    vec3 point = u_Eye + sin(u_Time)  * dir;
 	float sun = clamp(dot(lig, dir), 0.0, 1.0 );
 	vec3 col = vec3(0.70, 0.78, 0.85) - dir.y*0.2*vec3(1.0,0.8,1.0) + 0.15*0.75;
 	col += vec3(1.0,.6,0.1)*pow( sun, 1.5 );
 	col *= 0.95;
-	return col;
+
+	vec3 highlight = col;
+    float textureMap = worley(fs_Pos.x * 200.0, fs_Pos.y * 200.0 ,180.0) - 0.15 * fbm(fs_Pos.x, fs_Pos.y);
+    vec3 color = textureMap * (highlight) + (1.0 - textureMap) * (col);
+	return color;
 }
 
 
