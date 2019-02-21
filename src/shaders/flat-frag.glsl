@@ -255,13 +255,10 @@ float roundBoxSDF( vec3 p, vec3 b, float r )
 //Flower petal
 float flowerPetal(vec3 pos, float rad, float numPetals, float curve, float rotation)
 {
+    // apply rotation
     pos.yz = rot(-0.05) * pos.yz;
     pos.xz = rot(rotation + 0.3 * sin(0.5 ) ) * pos.xz;
 	pos.y += 0.6;
-
-	//repeat
-//    vec2 q = floor((pos.xz - 0.75) / 1.5);
-//    pos.xz = mod(pos.xz - 0.75, 1.5) - .75;
     float angle = atan(pos.z, pos.x);
     float radius = length(pos.xz) * rad;
 
@@ -339,7 +336,7 @@ float intersectPlane(vec3 origin, vec3 dir, vec4 n) {
 
 float waterMap( vec2 pos ) {
 	vec2 posm = pos * mat2( 0.60, -0.80, 0.80, 0.60 );
-	vec3 PosVec = vec3( 8.*posm, u_Time );
+	vec2 PosVec = vec2( 8.*posm );
 	return abs(fbm(PosVec.x, PosVec.y)-0.5 )* 0.1;
 }
 
@@ -630,7 +627,7 @@ vec3 backgroundColor(vec3 dir ) {
 	col *= 0.95;
 
 	vec3 highlight = col;
-    float textureMap = worley(fs_Pos.x * 200.0, fs_Pos.y * 200.0 ,180.0) - 0.15 * fbm(fs_Pos.x, fs_Pos.y);
+    float textureMap = worley(fs_Pos.x * 200.0, fs_Pos.y * 200.0 ,180.0) - 0.15 * fbm3d(point);
     vec3 color = textureMap * (highlight) + (1.0 - textureMap) * (col);
 	return color;
 }
@@ -716,7 +713,6 @@ void main() {
     //VIGNETTE
     float fallOff = 0.25;
     vec2 uv = gl_FragCoord.xy / u_Dimensions.xy;
-   	//color *= 0.25 + 0.75*pow( 16.0 * uv.x * uv.y * (1.0-uv.x)*(1.0-uv.y), 0.1 );
    	vec2 coord = (uv - 0.5) * (u_Dimensions.x/u_Dimensions.y) * 2.0;
     float rf = sqrt(dot(coord, coord)) * fallOff;
     float rf2_1 = rf * rf + 1.0;
