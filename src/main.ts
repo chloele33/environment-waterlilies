@@ -60,12 +60,12 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
-  gui.add(controls, 'ring_size', 1.0, 6.0).step(0.1);
-  gui.add(controls, 'blob_effect', 0.5, 2.5).step(0.1);
-  var colorFolder = gui.addFolder('Change Color');
-  colorFolder.add(controls, "R", 0, 255).step(1);
-  colorFolder.add(controls, "G", 0, 255).step(1);
-  colorFolder.add(controls, "B", 0, 255).step(1);
+  // gui.add(controls, 'ring_size', 1.0, 6.0).step(0.1);
+  // gui.add(controls, 'blob_effect', 0.5, 2.5).step(0.1);
+  // var colorFolder = gui.addFolder('Change Color');
+  // colorFolder.add(controls, "R", 0, 255).step(1);
+  // colorFolder.add(controls, "G", 0, 255).step(1);
+  // colorFolder.add(controls, "B", 0, 255).step(1);
 
 
   // get canvas and webgl context
@@ -112,39 +112,39 @@ function main() {
     renderer.clear();
 
     //Gui Controls
-    if(controls.ring_size != prevRingSize)
-    {
-      prevRingSize = controls.ring_size;
-      flat.setRingSize(prevRingSize);
-    }
-
-    if(controls.blob_effect != prevBlob)
-    {
-      prevBlob = controls.blob_effect;
-      flat.setBlob(prevBlob);
-    }
-
-
-    if(controls.R != prevR) {
-      prevR = controls.R;
-      r = prevR / 255.0;
-      flat.setColor(vec3.fromValues(r, g, b));
-
-    }
-
-    if(controls.G != prevG) {
-      prevG = controls.G;
-      g = prevG / 255.0;
-      flat.setColor(vec3.fromValues(r, g, b));
-
-    }
-
-    if(controls.B != prevB) {
-      prevB = controls.B;
-      b = prevB / 255.0;
-      flat.setColor(vec3.fromValues(r, b, b));
-
-    }
+    // if(controls.ring_size != prevRingSize)
+    // {
+    //   prevRingSize = controls.ring_size;
+    //   flat.setRingSize(prevRingSize);
+    // }
+    //
+    // if(controls.blob_effect != prevBlob)
+    // {
+    //   prevBlob = controls.blob_effect;
+    //   flat.setBlob(prevBlob);
+    // }
+    //
+    //
+    // if(controls.R != prevR) {
+    //   prevR = controls.R;
+    //   r = prevR / 255.0;
+    //   flat.setColor(vec3.fromValues(r, g, b));
+    //
+    // }
+    //
+    // if(controls.G != prevG) {
+    //   prevG = controls.G;
+    //   g = prevG / 255.0;
+    //   flat.setColor(vec3.fromValues(r, g, b));
+    //
+    // }
+    //
+    // if(controls.B != prevB) {
+    //   prevB = controls.B;
+    //   b = prevB / 255.0;
+    //   flat.setColor(vec3.fromValues(r, b, b));
+    //
+    // }
 
     processKeyPresses();
     renderer.render(camera, flat, [

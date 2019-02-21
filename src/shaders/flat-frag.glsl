@@ -14,8 +14,8 @@ out vec4 out_Col;
 
 float FOVY = radians(45.0);
 float EPSILON = 0.01;
-vec3 l_sha = normalize(vec3(1.0,0.8,-0.7));
-vec3 lig = normalize(vec3(1.0,0.8,0.7));
+vec3 l_sha = normalize(vec3(-1.0,0.8,-0.7));
+vec3 lig = normalize(vec3(-1.0,0.8,0.7));
 
 
 float random1( vec3 p , vec3 seed) {
@@ -208,7 +208,7 @@ float opIntersection( float d1, float d2 ) { return max(d1,d2); }
 float leaf(vec3 p, float r, float h, float rotate)
 {
     //return opSubtraction(sdBox(p, vec3(r, h, r)), sdCylinder(p - vec3(r, 0.0, r), r*2.0, 0.0, h)) ;
-    return opSubtraction(sdCylinder(p, r , 0.0, h), sdBox(p - vec3(r * rotate, 0.0, -r * rotate), vec3(r/2.0, 1.0, r/2.0))) ;
+    return opSubtraction(sdCylinder(p, r , 0.0, h), sdBox(p - vec3(r , 0.0, -r * rotate), vec3(r/2.0, 1.0, r/2.0))) ;
 }
 
 
@@ -251,8 +251,8 @@ float flowerPetal(vec3 pos, float rad, float numPetals, float curve, float rotat
     p.x = r* cos(a) * rad;
     p.z = r * sin(a)* rad * 6.0;
     // curl and then flatten flower
-    p.xy = rot(curve * max(curve - 0.1 * curve, abs(sin(u_Time * 0.02)) + 0.15) - cos(2. * sin(0.75+ 1.0 * (p.x + 0.5 * p.y))) * .75 * r) * p.xy;
-    p.y = p.y * 10.0;
+    p.xy = rot(curve * max(curve - 0.1 * curve, abs(sin(u_Time * 0.02)) + 0.15) - cos(2. * sin(0.65+ 1.0 * (p.x + 0.5 * p.y))) * .75 * r) * p.xy;
+    p.y = p.y * 15.0;
     return 0.07 * sphereSDF(p + vec3(-0.3, 0., 0.), rad, vec3(1.0, 1.0, 1.0));
 }
 
@@ -262,7 +262,7 @@ float waterLily(vec3 p) {
     float layer1 = opUnion(flower, flower1);
     float flower2 = flowerPetal(p + vec3(0.0, -0.08, 0.0), 0.55, 8.0, 1.0, 0.0);
     float layer2 = opUnion(layer1, flower2);
-    float flower3 = flowerPetal(p + vec3(0.0, -0.09, 0.0), 0.50, 5.0, 1.2, 0.0);
+    float flower3 = flowerPetal(p + vec3(0.0, -0.1, 0.0), 0.50, 5.0, 1.2, 0.0);
 
     return opUnion(layer2, flower3);
 }
@@ -280,22 +280,26 @@ float waterLily2(vec3 p) {
 
 
 float allGreens(vec3 p) {
-        float leaf1 = leaf(p+ vec3(3.0, -0.2, 2.0), 1.5, 0.01, 1.0);
-        float leaf2 = leaf(p+ vec3(3.0, -0.2, -3.0), 1.0, 0.01, -1.0);
-        float leaf3 = leaf(p+ vec3(-2.0, -0.2, -10.0), 1.5, 0.01, 1.0);
+        float leaf1 = leaf(p+ vec3(3.0, -0.01, 2.0), 1.5, 0.01, 1.0);
+        float leaf2 = leaf(p+ vec3(3.0, -0.05, -3.0), 1.0, 0.01, -1.0);
+        float leaf3 = leaf(p+ vec3(-2.0 * sin(u_Time * 0.01), -0.01, -10.0 + cos(u_Time * 0.05)), 1.5, 0.01, 1.0);
+        float leaf4 = leaf(p+ vec3(-2.0, -0.01, 1.0), 1.5, 0.01, 0.8);
+        float leaf5 = leaf(p+ vec3(4.5, -0.01, -3.5), 1.5, 0.01, -0.8);
         float leafSet1 = opUnion(leaf1, leaf2);
+        float leafSet2 = opUnion(leaf3, leaf4);
+        float leafSet3 = opUnion(leafSet2, leafSet1);
 
-        return opUnion(leafSet1, leaf3);
+        return opUnion(leafSet3, leaf5);
 
 }
 
 //sceneSDF
 float sceneSDF(vec3 p, in vec3 color)
 {
-    float lily1 = waterLily(p + vec3(-1.0, 0.0, -1.0));
-    //float lily2 = waterLily2(p + vec3(8.0, 0.0, -5.0));
+    float lily1 = waterLily(p + vec3(-1.0, -0.5, -1.0));
+    float lily2 = waterLily2(p + vec3(8.0, -0.2, -5.0));
 
-    //return opUnion(lily1, lily2);
+    return opUnion(lily1, lily2);
     return lily1;
 }
 
@@ -313,7 +317,7 @@ float intersectPlane(vec3 origin, vec3 dir, vec4 n) {
 float waterMap( vec2 pos ) {
 	vec2 posm = pos * mat2( 0.60, -0.80, 0.80, 0.60 );
 	vec3 PosVec = vec3( 8.*posm, u_Time );
-	return abs( fbm(PosVec.x, PosVec.y)-0.5 )* 0.1;
+	return abs(fbm(PosVec.x, PosVec.y)-0.5 )* 0.1;
 }
 
 
@@ -329,57 +333,6 @@ vec3 waterNormal(vec3 origin, float dist, vec3 n) {
     normal = normalize( normal );
 
     return normal;
-}
-
-
-// flog clouds
-
-#define CLOUDSCALE (500./(64.*0.03))
-
-float cloudMap( const in vec3 p, const in float ani ) {
-	vec3 r = p/CLOUDSCALE;
-
-	float den = -1.8+cos(r.y*5.-4.3);
-
-	float f;
-	vec3 q = 2.5*r*vec3(0.75,1.0,0.75)  + vec3(1.0,1.0,15.0)*ani*0.15;
-    f  = 0.50000*fbm3d( q ); q = q*2.02 - vec3(-1.0,1.0,-1.0)*ani*0.15;
-    f += 0.25000*fbm3d( q ); q = q*2.03 + vec3(1.0,-1.0,1.0)*ani*0.15;
-    f += 0.12500*fbm3d( q ); q = q*2.01 - vec3(1.0,1.0,-1.0)*ani*0.15;
-    f += 0.06250*fbm3d( q ); q = q*2.02 + vec3(1.0,1.0,1.0)*ani*0.15;
-    f += 0.03125*fbm3d( q );
-
-	return 0.065*clamp( den + 4.4*f, 0.0, 1.0 );
-}
-
-vec3 raymarchClouds( const in vec3 ro, const in vec3 rd, const in vec3 bgc, const in vec3 fgc, const in float startdist, const in float maxdist, const in float ani ) {
-    // dithering
-    float h = fract(sin(rd.x+35.6987221*rd.y+u_Time)*43758.5453);
-	float t = startdist+CLOUDSCALE*0.02*h;//0.1*texture( iChannel0, fragCoord.xy/iChannelResolution[0].x ).x;
-
-    // raymarch
-	vec4 sum = vec4( 0.0 );
-	for( int i=0; i<64; i++ ) {
-		if( sum.a > 0.99 || t > maxdist ) continue;
-
-		vec3 pos = ro + t*rd;
-		float a = cloudMap( pos, ani );
-
-        // lighting
-		float dif = clamp(0.1 + 0.8*(a - cloudMap( pos + lig*0.15*CLOUDSCALE, ani )), 0., 0.5);
-		vec4 col = vec4( (1.+dif)*fgc, a );
-		// fog
-	//	col.xyz = mix( col.xyz, fgc, 1.0-exp(-0.0000005*t*t) );
-		col.rgb *= col.a;
-		sum = sum + col*(1.0 - sum.a);
-
-        // advance ray with LOD
-		t += (0.03*CLOUDSCALE)+t*0.012;
-	}
-    // blend with background
-	sum.xyz = mix( bgc, sum.xyz/(sum.w+0.0001), sum.w );
-
-	return clamp( sum.xyz, 0.0, 1.0 );
 }
 
 
@@ -507,7 +460,7 @@ float softshadow( vec3 ro, vec3 rd, float mint, float maxt, float k)
     float res = 1.0;
     for( float t = mint; t < maxt;)
     {
-        float h = sceneSDF(ro + rd*t,vec3(1.0, 1.0, 1.0) );
+        float h = opUnion(sceneSDF(ro + rd*t,vec3(1.0, 1.0, 1.0) ), greenSDF(ro + rd*t));
         if( h<0.001 )
             return 0.0;
         res = min( res, k*h/t );
@@ -616,14 +569,14 @@ vec3 getShading(vec3 pos , vec3 lightp, vec3 color, vec3 rayDir, bool shadow)
     float sha = 0.0;
     float dif = max(dot(norm,l_sha),0.0);
     if( shadow == true && dif > 0.01 ) {
-        sha = softshadow( pos+0.001 * norm, l_sha, 0.005, 50.0, 64.0 );
+        sha = softshadow( pos+0.001 * norm, l_sha, 0.005, 100.0, 64.0 );
     }
 
-    vec3 amb = vec3(0.05);
+    vec3 amb = vec3(0.08);
     vec3 diffuse = vec3(0.5 * pow(0.5+0.5*dot(norm, -lightdir), 3.0));
-    vec3 phong = vec3(0.2 * pow(max(dot(-rayDir, reflect(lightdir, norm)), 0.0), 20.0));
+    //vec3 phong = vec3(0.2 * pow(max(dot(-rayDir, reflect(lightdir, norm)), 0.0), 20.0));
 
-    return (amb + diffuse + phong) * color * pow(vec3(sha),vec3(1.0,1.0,1.5));
+    return (amb + diffuse) * color * pow(vec3(sha),vec3(1.0,1.0,1.5));
 }
 
 vec3 getShadingGreen(vec3 pos , vec3 lightp, vec3 color, vec3 rayDir, bool shadow)
@@ -647,20 +600,17 @@ vec3 getShadingGreen(vec3 pos , vec3 lightp, vec3 color, vec3 rayDir, bool shado
 
 vec3 backgroundColor(vec3 dir ) {
 	float sun = clamp(dot(lig, dir), 0.0, 1.0 );
-	vec3 col = vec3(0.7, 0.69, 0.75) - dir.y*0.2*vec3(1.0,0.8,1.0) + 0.15*0.75;
-	col += vec3(1.0,.6,0.1)*pow( sun, 8.0 );
+	vec3 col = vec3(0.70, 0.78, 0.85) - dir.y*0.2*vec3(1.0,0.8,1.0) + 0.15*0.75;
+	col += vec3(1.0,.6,0.1)*pow( sun, 1.5 );
 	col *= 0.95;
 	return col;
 }
 
 
+
+
 void main() {
-
   vec3 dir = castRay(u_Eye);
-
-  //vec3 color = 0.5 * (dir + vec3(1.0, 1.0, 1.0));
-  //out_Col = vec4(0.5 * (vec2(1.0)), 0.5 * (sin(u_Time * 3.14159 * 0.01) + 1.0), 1.0);
-
   vec3 color  = backgroundColor(dir);
   vec3 backgroundCol = color;
    // water
@@ -672,38 +622,36 @@ void main() {
     if (dist > 0.0) {
        vec3 p = u_Eye + dist * dir;
        hitwater = true;
-       vec3 waterNorm = waterNormal(p, dist * 5.0, vec3(0, 1.0, 0));
+       vec3 waterNorm = waterNormal(p, dist * 6.0, vec3(0, 1.0, 0));
        reflection = reflect(dir, waterNorm);
        float nrdot = dot(waterNorm,dir);
        fresnel = pow(1.0-abs(nrdot),5.);
         backgroundCol = backgroundColor(dir);
         color = backgroundCol;
     }
-     //color = raymarchClouds( u_Eye, dir, color, backgroundCol, hitwater?max(0.,min(150.,(150.-dist))):150., 500.0, u_Time*0.05 );
      if( hitwater ) {
-     		color = mix( color.xyz, backgroundCol, 1.0-exp(-0.0000005*dist*dist) );
+            vec3 waterColor = vec3(0.7, 0.7, 1.0);
+            float t = rayMarch(reflection, u_Eye + dist * dir, color);
+
+            if (t < 50.0){
+                color = backgroundColor(reflection) + vec3(0.5, 0.5, 0.5) / (t / 2.0);
+            }
+
+     		color = mix( color, backgroundCol, 1.0-exp(-0.0000005*dist*dist) );
      		color *= fresnel * 0.95;
      	}
-    float t = rayMarch(reflection, u_Eye + dist * dir, color);
 
-  if (t < 50.0){
-    vec3 light1 = getShading(u_Eye + t * dir, vec3(5.0,10.0,-20.0), vec3(1.0,1.0,1.0), dir, true);
-    vec3 light2 = getShading(u_Eye + t * dir, vec3(-20,10.0,5.0), vec3(0.5,0.4,0.1), dir, false);
-    vec3 light3 = getShading(u_Eye + t * dir, vec3(20.0,5.0,-8.0), vec3(0.7,0.3,0.1), dir, false);
-    color = light1+light2+light3;
-  }
-
-  color = pow( color, vec3(0.7) );
+    color = pow( color, vec3(0.7));
 
 
         // load Scene SDF
-  t = rayMarch(dir, u_Eye, color);
+  float t = rayMarch(dir, u_Eye, color);
 
   if (t < 50.0){
     vec3 point = u_Eye + t * dir;
-    vec3 light1 = getShading(u_Eye + t * dir, vec3(5.0,10.0,-20.0), vec3(1.0,1.0,1.0), dir, true);
-    vec3 light4 = getShading(u_Eye + t * dir, vec3(-5.0,15.0,20.0), vec3(1.0,1.0,1.0), dir, true);
-    vec3 light2 = getShading(u_Eye + t * dir, vec3(-20,10.0,5.0), vec3(0.8,0.5,0.5), dir, false);
+    vec3 light1 = getShading(u_Eye + t * dir, vec3(5.0,10.0,-20.0), vec3(1.0,0.97,0.93), dir, true);
+    vec3 light4 = getShading(u_Eye + t * dir, vec3(-5.0,15.0,20.0), vec3(1.0,0.97,0.93), dir, true);
+    vec3 light2 = getShading(u_Eye + t * dir, vec3(-5.0,10.0,5.0), vec3(0.8,0.78,0.78), dir, false);
     vec3 light3 = getShading(u_Eye + t * dir, vec3(20.0,5.0,-8.0), vec3(0.7,0.3,0.3), dir, false);
     color = light1+light2+light3 + light4;
     color *= 1.5;
@@ -725,18 +673,16 @@ void main() {
              float textureMap = worley(point.x * 80.0, point.z * 80.0 ,120.0) - 0.15 * fbm(fs_Pos.x, fs_Pos.y);
 
              color = textureMap * (highlight) + (1.0 - textureMap) * (color);
-
-
         }
     }
     // distance fog
-    float fog = clamp(smoothstep(15.0, 50.0, length(fs_Pos)), 0.0, 1.0); // Distance fog
+    float fog = clamp(smoothstep(40.0, 60.0, length(fs_Pos)), 0.0, 1.0); // Distance fog
 
   	// contrast
   	color = color*color*(3.0-2.0*color);
 
   	// saturation
-    color = mix( color, vec3(dot(color,vec3(0.50))), -0.5 );
+    color = mix( color, vec3(dot(color,vec3(0.40))), -0.5 );
 
     //VIGNETTE
     float fallOff = 0.25;
